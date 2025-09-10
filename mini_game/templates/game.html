@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+    <head>        
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        <title>Tic-Tac-Toe!</title>
+        <script>
+            var size = -1
+            var pos = "-1,-1"
+            var player = 1
+            var msg = "";
+            window.onload = function() {
+                var xhttp = new XMLHttpRequest();
+                xhttp.open("GET", "/reset", true);
+                xhttp.send();
+                use_bucket(0)
+            }
+            function use_bucket(bucket_size){
+                console.log('Use Bucket ' + bucket_size);
+                size = bucket_size
+                pos = "-1,-1"
+                base_id = "player_" + player + "_bucket_"
+                for (let i = 0; i <= 2; i++) {
+                    document.getElementById(base_id + i).style.borderColor = "grey"
+                }
+                search_id = base_id + size
+                var num_bucket = document.getElementById(search_id).getAttribute("value")
+                if (num_bucket == 0){
+                    alert('No such bucket remaining.')
+                } else {
+                    to_color = "red"
+                    if (player == 1) {
+                        to_color = "blue"
+                    }
+                    document.getElementById(search_id).style.borderColor = to_color
+                }
+            }
+            function handle_remaining_buckets() {
+                search_id = "player_" + player + "_bucket_" + size
+                var num_bucket = document.getElementById(search_id).getAttribute("value")
+                document.getElementById(search_id).setAttribute("value", num_bucket - 1)
+                document.querySelectorAll('#' + search_id + ' p')[0].innerHTML = num_bucket - 1
+            }
+            function swap_player(){
+                if (player == 1) {
+                    player = 2
+                    base_id = "player_1_bucket_"
+                    for (let i = 0; i <= 2; i++) {
+                        document.getElementById(base_id + i).style.borderColor = "grey"
+                    }
+                } else {
+                    player = 1
+                    base_id = "player_2_bucket_"
+                    for (let i = 0; i <= 2; i++) {
+                        document.getElementById(base_id + i).style.borderColor = "grey"
+                    }
+                }
+            }
+            function do_action(x, y){
+                if (size == '-1') {
+                    alert('Please select a bucket first.')
+                } else {
+                    var xhttp = new XMLHttpRequest();
+                    xhttp.onreadystatechange = function() {
+                        if (this.readyState == 4 && this.status == 200) {
+                            msg = this.responseText
+                            console.log(msg);
+                            if (msg == "") {
+                                handle_remaining_buckets()
+                                swap_player()
+                            } else {
+                                alert(msg)
+                            }
+                        }
+                    };
+                    new_pos = x + "," + y
+                    action = size + "_" + pos + "_" + new_pos
+                    console.log(action)
+                    xhttp.open("GET", "/game?action=" + action, true);
+                    xhttp.send();
+                }
+            }
+        </script>
+    </head>
+<body style="background-color:rgb(160, 160, 160);text-align:center;">
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-lg-3">
+        <h2 style="color:blue">Player 1</h2>
+        <br>
+        <div style="border-style: dotted; border-color: grey; font-size: 36px;" id="player_1_bucket_2" onclick="use_bucket(2)" value="{{buckets.1.2}}">
+            <label>Large Buckets</label> <p>{{buckets.1.2}}</p>
+        </div>
+        <div style="border-style: dotted; border-color: grey; font-size: 36px;" id="player_1_bucket_1" onclick="use_bucket(1)" value="{{buckets.1.1}}">
+            <label>Medium Buckets</label> <p>{{buckets.1.1}}</p>
+        </div>
+        <div style="border-style: dotted; border-color: grey; font-size: 36px;" id="player_1_bucket_0" onclick="use_bucket(0)" value="{{buckets.1.0}}">
+            <label>Small Buckets</label> <p>{{buckets.1.0}}</p>
+        </div>
+        <br>
+        <span style="display: block;" id="player_1">
+            <h3 style="color:blue">Your move</h3>
+        </span>
+    </div>
+    <div class="col-lg-6" style="align-items:center;">        
+        <table style="width:100%">
+        {% for y in grid %}
+        <tr>
+            {% for x in grid %}
+            {% if x|add:y|divisibleby:2 %}
+            <td onclick="do_action({{x}},{{y}})" style="padding-top:{{height_pct}}%;background-color:rgb(71, 194, 112);" id="{{x}},{{y}}"> 
+            {% else %}
+            <td onclick="do_action({{x}},{{y}})" style="padding-top:{{height_pct}}%;background-color:rgb(194, 194, 71);" id="{{x}},{{y}}">
+            {% endif %}
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+        </table>
+    </div>
+    <div class="col-lg-3">
+        <h2 style="color:red">Player 2</h2>
+        <br>
+        <div style="border-style: dotted; border-color: grey; font-size: 36px;" id="player_2_bucket_2" onclick="use_bucket(2)" value="{{buckets.2.2}}">
+            <label>Large Buckets</label> <p>{{buckets.2.2}}</p>
+        </div>
+        <div style="border-style: dotted; border-color: grey; font-size: 36px;" id="player_2_bucket_1" onclick="use_bucket(1)" value="{{buckets.2.1}}">
+            <label>Medium Buckets</label> <p>{{buckets.2.1}}</p>
+        </div>
+        <div style="border-style: dotted; border-color: grey; font-size: 36px;" id="player_2_bucket_0" onclick="use_bucket(0)" value="{{buckets.2.0}}">
+            <label>Small Buckets</label> <p>{{buckets.2.0}}</p>
+        </div>
+        <br>
+        <span style="display: none;" id="player_2">
+            <h3 style="color:red">Your move</h3>
+        </span>
+    </div>
+  </div>
+</div>
+</body>
+</html>
