@@ -12,7 +12,12 @@
                 var xhttp = new XMLHttpRequest();
                 xhttp.open("GET", "/reset", true);
                 xhttp.send();
-                use_bucket(0)
+                var elems =  document.getElementsByClassName('cal_height');
+                var elem_width = elems[0].offsetWidth / elems.length;
+                console.log(elem_width)
+                for (const elem of elems) {
+                    elem.style.height = `${elem_width}px`; // width in PIXELS
+                }
             }
             function use_bucket(bucket_size){
                 console.log('Use Bucket ' + bucket_size);
@@ -40,6 +45,26 @@
                 document.getElementById(search_id).setAttribute("value", num_bucket - 1)
                 document.querySelectorAll('#' + search_id + ' p')[0].innerHTML = num_bucket - 1
             }
+            function draw_circle(elem) {
+                var elems =  document.getElementsByClassName('cal_height');
+                var elem_width = elems[0].offsetWidth / elems.length;
+                var radius = (size + 1) * 24
+                const ctx = elem.getContext("2d");
+                ctx.beginPath();
+                ctx.arc(elem_width/2, 75, radius, 0, 2 * Math.PI);
+                if (player == 1) {
+                    ctx.fillStyle = "blue";
+                } else {
+                    ctx.fillStyle = "red";
+                }
+                ctx.fill();
+                ctx.stroke();
+            }
+            function place_bucket(new_pos) {
+                elem = document.getElementById(new_pos)
+                draw_circle(elem)
+                // document.getElementById(new_pos).setAttribute("class", "circle-" + size)
+            }
             function swap_player(){
                 if (player == 1) {
                     player = 2
@@ -47,34 +72,39 @@
                     for (let i = 0; i <= 2; i++) {
                         document.getElementById(base_id + i).style.borderColor = "grey"
                     }
+                    document.getElementById('player_2').style.display = "block"
+                    document.getElementById('player_1').style.display = "none"
                 } else {
                     player = 1
                     base_id = "player_2_bucket_"
                     for (let i = 0; i <= 2; i++) {
                         document.getElementById(base_id + i).style.borderColor = "grey"
                     }
+                    document.getElementById('player_1').style.display = "block"
+                    document.getElementById('player_2').style.display = "none"
                 }
             }
             function do_action(x, y){
                 if (size == '-1') {
                     alert('Please select a bucket first.')
                 } else {
+                    new_pos = x + "," + y
+                    action = size + "_" + pos + "_" + new_pos
+                    console.log(action)
                     var xhttp = new XMLHttpRequest();
                     xhttp.onreadystatechange = function() {
                         if (this.readyState == 4 && this.status == 200) {
                             msg = this.responseText
                             console.log(msg);
-                            if (msg == "") {
+                            if (msg != "Invalid action") {
                                 handle_remaining_buckets()
+                                place_bucket(new_pos)
                                 swap_player()
                             } else {
                                 alert(msg)
                             }
                         }
                     };
-                    new_pos = x + "," + y
-                    action = size + "_" + pos + "_" + new_pos
-                    console.log(action)
                     xhttp.open("GET", "/game?action=" + action, true);
                     xhttp.send();
                 }
@@ -101,16 +131,17 @@
             <h3 style="color:blue">Your move</h3>
         </span>
     </div>
-    <div class="col-lg-6" style="align-items:center;">        
-        <table style="width:100%">
+    <div class="col-lg-6">        
+        <table style="width:96%;margin-left: auto;margin-right: auto">
         {% for y in grid %}
-        <tr>
+        <tr class="cal_height">
             {% for x in grid %}
             {% if x|add:y|divisibleby:2 %}
-            <td onclick="do_action({{x}},{{y}})" style="padding-top:{{height_pct}}%;background-color:rgb(71, 194, 112);" id="{{x}},{{y}}"> 
+            <td onclick="do_action({{x}},{{y}})" style="background-color:rgb(71, 194, 112);"> 
             {% else %}
-            <td onclick="do_action({{x}},{{y}})" style="padding-top:{{height_pct}}%;background-color:rgb(194, 194, 71);" id="{{x}},{{y}}">
+            <td onclick="do_action({{x}},{{y}})" style="background-color:rgb(194, 194, 71);">
             {% endif %}
+            <canvas id="{{x}},{{y}}"></canvas>
             </td>
             {% endfor %}
         </tr>
