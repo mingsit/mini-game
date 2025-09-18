@@ -3,31 +3,38 @@
     <head>        
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
         <title>Tic-Tac-Toe!</title>
+        <style>
+            .round-button {border-radius: 8px;}
+        </style>
         <script>
             var size = -1
             var pos = "-1,-1"
             var player = 1
-            var msg = "";
-            window.onload = function() {
+            var msg = ""
+            var action_type = "place"
+            function reset_game(refresh=true) {
                 var xhttp = new XMLHttpRequest();
+                if (refresh) {
+                    alert('Successfully reset')
+                    window.location.reload();
+                }
                 xhttp.open("GET", "/reset", true);
                 xhttp.send();
                 var elems =  document.getElementsByClassName('cal_height');
                 var elem_width = elems[0].offsetWidth / elems.length;
-                console.log(elem_width)
+                console.log(elem_width, refresh)
                 for (const elem of elems) {
                     elem.style.height = `${elem_width}px`; // width in PIXELS
                 }
             }
+            window.onload = function() {reset_game(refresh=false)}
             function use_bucket(bucket_size){
                 console.log('Use Bucket ' + bucket_size);
+                action_type = 'place'
                 size = bucket_size
                 pos = "-1,-1"
-                base_id = "player_" + player + "_bucket_"
-                for (let i = 0; i <= 2; i++) {
-                    document.getElementById(base_id + i).style.borderColor = "grey"
-                }
-                search_id = base_id + size
+                reset_color()
+                search_id = `player_${player}_bucket_${size}`
                 var num_bucket = document.getElementById(search_id).getAttribute("value")
                 if (num_bucket == 0){
                     alert('No such bucket remaining.')
@@ -45,68 +52,142 @@
                 document.getElementById(search_id).setAttribute("value", num_bucket - 1)
                 document.querySelectorAll('#' + search_id + ' p')[0].innerHTML = num_bucket - 1
             }
-            function draw_circle(elem) {
+            function draw_circle(elem, target_size, target_player) {
                 var elems =  document.getElementsByClassName('cal_height');
                 var elem_width = elems[0].offsetWidth / elems.length;
-                var radius = (size + 1) * 24
+                var radius = (target_size + 1) * 24
                 const ctx = elem.getContext("2d");
                 ctx.beginPath();
                 ctx.arc(elem_width/2, 75, radius, 0, 2 * Math.PI);
-                if (player == 1) {
+                if (target_player == 1) {
                     ctx.fillStyle = "blue";
                 } else {
                     ctx.fillStyle = "red";
                 }
                 ctx.fill();
-                ctx.stroke();
             }
-            function place_bucket(new_pos) {
+            function remove_circle(elem, rgb_color){
+                var elems =  document.getElementsByClassName('cal_height');
+                var elem_width = elems[0].offsetWidth / elems.length;
+                const ctx = elem.getContext("2d");
+                ctx.beginPath();
+                ctx.arc(elem_width/2, 75, 75, 0, 2 * Math.PI);
+                ctx.fillStyle = rgb_color;
+                ctx.fill();
+            }
+            function place_bucket(new_pos, target_size, target_player, remove=false) {
+                console.log('Place Bucket:' + new_pos)
                 elem = document.getElementById(new_pos)
-                draw_circle(elem)
+                if (remove) {
+                    if ((parseInt(new_pos.split(',')[0]) + parseInt(new_pos.split(',')[1])) % 2 == 0) {
+                        rgb_color = "rgb(71, 194, 112)"
+                    } else {
+                        rgb_color = "rgb(194, 194, 71)"
+                    }
+                    remove_circle(elem, rgb_color)
+                }
+                if (target_size != -1) {
+                    console.log('Draw Circle')
+                    draw_circle(elem, target_size, target_player)
+                }
+                
                 // document.getElementById(new_pos).setAttribute("class", "circle-" + size)
             }
+            function move_bucket() {
+                action_type = "move"
+                size = -1
+                search_id = `player_${player}_move_bucket`
+                to_color = "red"
+                if (player == 1) {
+                    to_color = "blue"
+                }
+                document.getElementById(search_id).style.borderColor = to_color
+            }
+            function reset_color() {
+                for (let p = 1; p <= 2; p++) {
+                    for (let i = 0; i <= 2; i++) {
+                        elem_id = `player_${p}_bucket_${i}`
+                        document.getElementById(elem_id).style.borderColor = "grey"
+                    }
+                    elem_id = `player_${p}_move_bucket`
+                    document.getElementById(elem_id).style.borderColor = "grey"
+                }
+            }
             function swap_player(){
+                pos = "-1,-1"
+                reset_color()
                 if (player == 1) {
                     player = 2
-                    base_id = "player_1_bucket_"
-                    for (let i = 0; i <= 2; i++) {
-                        document.getElementById(base_id + i).style.borderColor = "grey"
-                    }
                     document.getElementById('player_2').style.display = "block"
                     document.getElementById('player_1').style.display = "none"
                 } else {
                     player = 1
-                    base_id = "player_2_bucket_"
-                    for (let i = 0; i <= 2; i++) {
-                        document.getElementById(base_id + i).style.borderColor = "grey"
-                    }
                     document.getElementById('player_1').style.display = "block"
                     document.getElementById('player_2').style.display = "none"
                 }
             }
             function do_action(x, y){
-                if (size == '-1') {
-                    alert('Please select a bucket first.')
-                } else {
-                    new_pos = x + "," + y
-                    action = size + "_" + pos + "_" + new_pos
-                    console.log(action)
-                    var xhttp = new XMLHttpRequest();
-                    xhttp.onreadystatechange = function() {
-                        if (this.readyState == 4 && this.status == 200) {
-                            msg = this.responseText
-                            console.log(msg);
-                            if (msg != "Invalid action") {
-                                handle_remaining_buckets()
-                                place_bucket(new_pos)
-                                swap_player()
-                            } else {
-                                alert(msg)
-                            }
+                if (action_type == 'place') {
+                    if (size == '-1' && pos == "-1,-1") {
+                        alert('Please select a bucket first.')
+                    } else {
+                        new_pos = x + "," + y
+                        if (pos == "-1,-1") {
+                            action = size + "_" + new_pos
+                            var xhttp = new XMLHttpRequest();
+                            xhttp.onreadystatechange = function() {
+                                if (this.readyState == 4 && this.status == 200) {
+                                    msg = this.responseText
+                                    console.log(msg);
+                                    if (msg != "Invalid action") {
+                                        handle_remaining_buckets()
+                                        place_bucket(new_pos, size, player)
+                                        if (msg) {
+                                            alert(msg)
+                                        }
+                                        swap_player()
+                                    } else {
+                                        alert(msg)
+                                    }
+                                }
+                            };
+                            xhttp.open("GET", "/game?action=" + action, true);
+                            xhttp.send();
+                        } else {
+                            action = pos + "_" + new_pos
+                            var xhttp = new XMLHttpRequest();
+                            xhttp.onreadystatechange = function() {
+                                if (this.readyState == 4 && this.status == 200) {
+                                    msg = this.responseText
+                                    console.log(msg);
+                                    if (msg != "Invalid action") {
+                                        if (msg.includes('|')) {
+                                            // get size and player for new pos and old pos
+                                            var new_size = parseInt(msg.split('|')[0])
+                                            var old_size = parseInt(msg.split('|')[2])
+                                            var old_player = parseInt(msg.split('|')[3])
+                                            size = parseInt(new_size)
+                                            old_size = parseInt(old_size)
+                                            place_bucket(new_pos, size, player)
+                                            place_bucket(pos, old_size, old_player, remove=true)
+                                        }
+                                        if (msg.includes('win')) {
+                                            alert(msg)
+                                        }
+                                        swap_player()
+                                    } else {
+                                        alert(msg)
+                                    }
+                                }
+                            };
+                            xhttp.open("GET", "/game?action=" + action, true);
+                            xhttp.send();
                         }
-                    };
-                    xhttp.open("GET", "/game?action=" + action, true);
-                    xhttp.send();
+                    }
+                } else {
+                    action_type = 'place'
+                    pos = `${x},${y}`
+                    console.log('Move from:' + pos)
                 }
             }
         </script>
@@ -115,16 +196,20 @@
 <div class="container-fluid">
   <div class="row">
     <div class="col-lg-3">
+        <button class="round-button" onclick="reset_game()">Reset Game</button>
         <h2 style="color:blue">Player 1</h2>
         <br>
         <div style="border-style: dotted; border-color: grey; font-size: 36px;" id="player_1_bucket_2" onclick="use_bucket(2)" value="{{buckets.1.2}}">
-            <label>Large Buckets</label> <p>{{buckets.1.2}}</p>
+            <label>Place Large Buckets</label> <p>{{buckets.1.2}}</p>
         </div>
         <div style="border-style: dotted; border-color: grey; font-size: 36px;" id="player_1_bucket_1" onclick="use_bucket(1)" value="{{buckets.1.1}}">
-            <label>Medium Buckets</label> <p>{{buckets.1.1}}</p>
+            <label>Place Medium Buckets</label> <p>{{buckets.1.1}}</p>
         </div>
         <div style="border-style: dotted; border-color: grey; font-size: 36px;" id="player_1_bucket_0" onclick="use_bucket(0)" value="{{buckets.1.0}}">
-            <label>Small Buckets</label> <p>{{buckets.1.0}}</p>
+            <label>Place Small Buckets</label> <p>{{buckets.1.0}}</p>
+        </div>
+        <div style="border-style: dotted; border-color: grey; font-size: 36px;" id="player_1_move_bucket" onclick="move_bucket()">
+            <label>Move Bucket</label>
         </div>
         <br>
         <span style="display: block;" id="player_1">
@@ -149,16 +234,20 @@
         </table>
     </div>
     <div class="col-lg-3">
+        <button class="round-button" onclick="reset_game()">Reset Game</button>
         <h2 style="color:red">Player 2</h2>
         <br>
         <div style="border-style: dotted; border-color: grey; font-size: 36px;" id="player_2_bucket_2" onclick="use_bucket(2)" value="{{buckets.2.2}}">
-            <label>Large Buckets</label> <p>{{buckets.2.2}}</p>
+            <label>Place Large Buckets</label> <p>{{buckets.2.2}}</p>
         </div>
         <div style="border-style: dotted; border-color: grey; font-size: 36px;" id="player_2_bucket_1" onclick="use_bucket(1)" value="{{buckets.2.1}}">
-            <label>Medium Buckets</label> <p>{{buckets.2.1}}</p>
+            <label>Place Medium Buckets</label> <p>{{buckets.2.1}}</p>
         </div>
         <div style="border-style: dotted; border-color: grey; font-size: 36px;" id="player_2_bucket_0" onclick="use_bucket(0)" value="{{buckets.2.0}}">
-            <label>Small Buckets</label> <p>{{buckets.2.0}}</p>
+            <label>Place Small Buckets</label> <p>{{buckets.2.0}}</p>
+        </div>
+        <div style="border-style: dotted; border-color: grey; font-size: 36px;" id="player_2_move_bucket" onclick="move_bucket()">
+            <label>Move Bucket</label>
         </div>
         <br>
         <span style="display: none;" id="player_2">

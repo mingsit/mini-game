@@ -37,7 +37,19 @@ def game(request):
         logging.info(msg)
         if not msg:
             msg = ""
-        return HttpResponse(msg)
+        if ',' in action.split('_')[0]:
+            if msg:
+                return HttpResponse(msg)
+            # move bucket, return size and player for new pos and old pos
+            old_pos_str, new_pos_str = action.split('_')
+            new_pos = tuple([int(v) for v in new_pos_str.split(',')])
+            old_pos = tuple([int(v) for v in old_pos_str.split(',')])
+            new_player, new_size = ttt.get_largest_bucket_info(new_pos, info='all')
+            old_player, old_size = ttt.get_largest_bucket_info(old_pos, info='all')
+            info_str = f"{new_size}|{new_player}|{old_size}|{old_player}"
+            return HttpResponse(info_str)
+        else:
+            return HttpResponse(msg)
     return HttpResponse(template.render(context, request))
 
 def reset(request):

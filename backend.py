@@ -22,9 +22,14 @@ class TicTacToe():
         self.buckets[1][0] -= 1  # Player with first move has 1 less small bucket
 
     def check_valid_action(self, action):
-        bucket, old_pos, new_pos = action.split('_')
-        bucket = int(bucket)
-        old_pos = tuple([int(v) for v in old_pos.split(',')])
+        # action can be {bucket}_{new_pos} OR {old_pos}_{new_pos}
+        bucket_or_pos, new_pos = action.split('_')
+        try:
+            bucket = int(bucket_or_pos)
+            old_pos = (-1, -1)
+        except ValueError:
+            old_pos = tuple([int(v) for v in bucket_or_pos.split(',')])
+            bucket = self.get_largest_bucket_info(old_pos)
         new_pos = tuple([int(v) for v in new_pos.split(',')])
         # Check position exceed grid size
         if max(new_pos) >= self.config['grid_size']:
@@ -57,20 +62,40 @@ class TicTacToe():
         return True
 
     def process_action(self, action):
-        bucket, old_pos, new_pos = action.split('_')
-        bucket = int(bucket)
-        old_pos = tuple([int(v) for v in old_pos.split(',')])
+        bucket_or_pos, new_pos = action.split('_')
+        try:
+            bucket = int(bucket_or_pos)
+            old_pos = (-1, -1)
+        except ValueError:
+            old_pos = tuple([int(v) for v in bucket_or_pos.split(',')])
+            bucket = self.get_largest_bucket_info(old_pos)
         new_pos = tuple([int(v) for v in new_pos.split(',')])
-        if old_pos != (-1,-1):
+        if old_pos != (-1, -1):
             self.matrix[old_pos].pop(0)
-            self.check_winner()  # case if player removes a bucket so another player immediately wins
+            winner = self.check_winner()  # case if player removes a bucket so another player immediately wins
+            if winner:
+                return winner
         else:
             # minus 1 for player's bucket
             self.buckets[self.current_player][bucket] -= 1
         self.matrix[new_pos] = [(self.current_player, int(bucket))] + self.matrix[new_pos]  # (player, size)
 
+    def get_largest_bucket_info(self, pos, info='size'):
+        # get the largest bucket size of a cell, raise Error if empty
+        cell = self.matrix.get(pos, [])
+        if not cell:
+            # No bucket exists in {pos}
+            if info in ['size', 'player']:
+                return -1
+            return (-1, -1)  
+        if info == 'size':
+            return cell[0][1]  # size
+        elif info == 'player':
+            return cell[0][0]  # player
+        return cell[0]  # (player, size)
+
     def get_largest_bucket(self, x, y):
-        # get the largest bucket of a cell, return 0 if empty
+        # get the largest bucket of a cell, return which player, return 0 if empty
         cell = self.matrix.get((x,y), [])
         if not cell:
             return 0
@@ -116,7 +141,9 @@ class TicTacToe():
         if not self.check_valid_action(action):
             return 'Invalid action'  # re-input action, nothing happens
         if self.max_turn < self.config['max_turn']:
-            self.process_action(action)
+            winner = self.process_action(action)
+            if winner:
+                return f'Player {winner} wins during player {self.current_player} moving a bucket'  # game won't contine
             winner = self.check_winner()
             if winner:
                 self.reset()
@@ -127,20 +154,33 @@ class TicTacToe():
                 self.current_player = 1
             self.max_turn += 1
             return
-        else:
+        else:            
             self.reset()
             return 'Draw'  # game won't contine
         
 if __name__ == '__main__':
     debug_actions = [
-        '2_-1,-1_1,1',
-        '2_-1,-1_0,0',
-        '2_-1,-1_2,0',
-        '2_-1,-1_0,2',
-        '1_-1,-1_0,1',
-        '1_-1,-1_2,1',
-        '2_2,0_2,1',  # Player 1 wins here
-        '1_-1,-1_2,2',
+        '2_1,1',
+        '2_0,0',
+        '2_2,0',
+        '2_0,2',
+        '1_0,1',
+        '1_2,1',
+        '2,0_2,1',  # Player 1 wins here
+        '-1,-1_2,2',
+    ]
+    debug_actions = [
+        '2_1,1',
+        '1_2,2',
+        '2_2,2',
+        '1_0,0',
+        '1_1,2',
+        '2_1,2',
+        '1_2,1',
+        '2_2,1',
+        '0_0,2',
+        '0_2,0',
+        '2,2_2,0',  # Player 2 wins immediately when player 1 moves bucket
     ]
     ttt = TicTacToe(grid_size=3, buckets=[2,2,2])
     for action in debug_actions:
