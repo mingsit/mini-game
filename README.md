@@ -15,4 +15,4 @@ There should be no dependency to install
 ! python manage.py runserver
 2. Open localhost:8000 to play!
  
-![screenshot](https://github.com/mingsit/mini-game/blob/main/demo.jpg)
+![hippo](https://github.com/mingsit/mini-game/blob/main/demo.gif)
