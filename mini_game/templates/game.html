@@ -171,8 +171,7 @@
                                             old_size = parseInt(old_size)
                                             place_bucket(new_pos, size, player)
                                             place_bucket(pos, old_size, old_player, remove=true)
-                                        }
-                                        if (msg.includes('win')) {
+                                        } else {
                                             alert(msg)
                                         }
                                         swap_player()

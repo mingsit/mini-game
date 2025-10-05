@@ -10,9 +10,14 @@ Player with first move has 1 less small bucket
 
 Players can move their buckets if first layer (can't move an overlapped bucket)
 
-There should be no dependency to install
-1. Run the following commend to start server:
+1. Please install dependency by running: (If you are using older Python version, please use older Django version)
+
+pip install -r requirements.txt
+
+2. Run the following commend to start server:
+
 ! python manage.py runserver
-2. Open localhost:8000 to play!
+
+3. Open localhost:8000 to play!
  
 ![hippo](https://github.com/mingsit/mini-game/blob/main/demo.gif)
